@@ -344,4 +344,3 @@ Este projeto é livre para uso educacional e pessoal.
 
 **URL do Projeto**: https://lovable.dev/projects/7c8ecb34-fd7a-4487-85c4-ad25f3a7b74f
 
-Desenvolvido com ❤️ usando Lovable
