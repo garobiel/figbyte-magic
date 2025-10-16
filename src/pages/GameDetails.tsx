@@ -1,176 +1,174 @@
-/**
- * Página de detalhes do jogo
- * Mostra informações completas do jogo e permite adicionar ao carrinho
- */
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { fetchGameDetails, type Game } from "@/lib/rawg";
-import { Header } from "@/components/Header";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { Star, Key } from "lucide-react";
+import GameNavbar from "@/components/game-store/GameNavbar";
+import GameFooter from "@/components/game-store/GameFooter";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+
+type Game = {
+  id: number;
+  name: string;
+  description_raw: string;
+  background_image: string;
+  released: string;
+  rating: number;
+  genres: { name: string }[];
+  platforms: { platform: { name: string } }[];
+};
 
 const GameDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { toast } = useToast();
+
   const [game, setGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  const [selectedEdition, setSelectedEdition] = useState("padrao");
 
-  // Gerar preço fictício baseado no ID do jogo para manter consistência
-  const price = ((parseInt(id || "0") % 200) + 50).toFixed(2);
+  // Pega o preço random da query string
+  const precoRandom = searchParams.get("preco") || ((Math.random() * 300 + 50).toFixed(2));
 
   useEffect(() => {
-    const loadGame = async () => {
-      if (!id) return;
+    const fetchGame = async () => {
       try {
-        const data = await fetchGameDetails(parseInt(id));
+        const response = await fetch(
+          `https://api.rawg.io/api/games/${id}?key=b805f7aecece4a0680361007a4a32339`
+        );
+        const data = await response.json();
         setGame(data);
       } catch (error) {
-        toast({ title: "Erro ao carregar jogo", variant: "destructive" });
+        console.error("Erro ao buscar jogo:", error);
       } finally {
         setLoading(false);
       }
     };
-    loadGame();
+    fetchGame();
   }, [id]);
 
-  // Função para adicionar ao carrinho
-  const handleAddToCart = async () => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-
+  const handleAddToCart = () => {
     if (!game) return;
-
-    try {
-      const { error } = await supabase.from("cart").insert({
-        user_id: user.id,
-        game_id: game.id,
-        game_title: game.name,
-        game_image: game.background_image,
-        game_price: parseFloat(price),
-      });
-
-      if (error) throw error;
-
-      toast({ title: "Adicionado ao carrinho!" });
-    } catch (error: any) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    }
+    toast({
+      title: "Adicionado ao carrinho!",
+      description: `${game.name} foi adicionado ao seu carrinho.`,
+    });
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-100">
-        <Header onSearch={() => {}} />
-        <div className="container mx-auto p-6">Carregando...</div>
-      </div>
-    );
-  }
+  const handleBuyNow = () => {
+    navigate(`/checkout/${id}?preco=${precoRandom}`);
+  };
 
-  if (!game) {
-    return (
-      <div className="min-h-screen bg-gray-100">
-        <Header onSearch={() => {}} />
-        <div className="container mx-auto p-6">Jogo não encontrado</div>
-      </div>
-    );
-  }
+  if (loading) return <p className="text-center mt-10">Carregando...</p>;
+  if (!game) return <p className="text-center mt-10">Jogo não encontrado.</p>;
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Header onSearch={() => navigate("/")} />
-      
-      <main className="container mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <h1 className="text-3xl font-bold p-6">{game.name}</h1>
-          
-          <div className="grid md:grid-cols-2 gap-6 p-6">
-            <div>
-              <img 
-                src={game.background_image} 
-                alt={game.name} 
-                className="w-full rounded-lg"
+    <div className="min-h-screen bg-background">
+      <GameNavbar />
+
+      <main className="bg-card py-12">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl font-bold text-card-foreground mb-4">
+            {game.name}
+          </h1>
+
+          <div className="flex items-center gap-2 mb-8">
+            <div className="flex">
+              {[...Array(Math.round(game.rating))].map((_, i) => (
+                <Star key={i} className="w-5 h-5 fill-primary text-primary" />
+              ))}
+            </div>
+            <span className="text-card-foreground">{game.rating}</span>
+            <span className="text-muted-foreground">
+              | {game.genres.map((g) => g.name).join(", ")}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <img
+                src={game.background_image}
+                alt={game.name}
+                className="w-full rounded-lg shadow-card mb-8"
               />
-              
-              <div className="mt-4 space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">Plataforma:</span>
-                  <div className="flex items-center gap-1 bg-black/80 px-2 py-1 rounded">
-                    <span className="text-white text-sm">STEAM</span>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Key className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-card-foreground">Plataformas:</p>
+                    <p className="text-muted-foreground">
+                      {game.platforms.map((p) => p.platform.name).join(", ")}
+                    </p>
                   </div>
                 </div>
-                
+
                 <div>
-                  <span className="font-semibold">Região:</span>
-                  <span className="ml-2">GLOBAL</span>
+                  <h3 className="font-bold text-card-foreground mb-2">Edição:</h3>
+                  <RadioGroup
+                    value={selectedEdition}
+                    onValueChange={setSelectedEdition}
+                    className="space-y-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="padrao" id="padrao" />
+                      <Label htmlFor="padrao">Edição Padrão</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="deluxe" id="deluxe" />
+                      <Label htmlFor="deluxe">Edição Deluxe</Label>
+                    </div>
+                  </RadioGroup>
                 </div>
-                
-                <div>
-                  <span className="font-semibold">Tipo:</span>
-                  <span className="ml-2">Chave</span>
+
+                <div className="mt-6">
+                  <p className="text-card-foreground">
+                    {game.description_raw || "Descrição indisponível."}
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div>
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-xl font-bold mb-4">Faça agora sua compra</h3>
-                
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600 mb-2">Valor do produto:</p>
-                  <p className="text-3xl font-bold">R$ {price}</p>
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg p-6 shadow-card sticky top-24">
+                <h3 className="font-bold text-card-foreground mb-4">
+                  Faça agora sua compra
+                </h3>
+
+                <div className="mb-6">
+                  <p className="text-sm text-muted-foreground mb-2">Valor do produto:</p>
+                  <span className="text-2xl font-bold text-card-foreground">
+                    R$ {parseFloat(precoRandom).toFixed(2).replace(".", ",")}
+                  </span>
                 </div>
 
-                <Button 
-                  onClick={handleAddToCart}
-                  className="w-full mb-2"
-                  size="lg"
-                >
-                  Adicionar ao carrinho
-                </Button>
+                <div className="space-y-3">
+                  <Button
+                    onClick={handleAddToCart}
+                    variant="outline"
+                    className="w-full border-card-foreground text-card-foreground hover:bg-muted"
+                  >
+                    Adicionar ao carrinho
+                  </Button>
 
-                <Button 
-                  onClick={() => {
-                    handleAddToCart();
-                    navigate("/cart");
-                  }}
-                  variant="secondary"
-                  className="w-full"
-                  size="lg"
-                >
-                  Compre Agora
-                </Button>
-              </div>
-
-              <div className="mt-6">
-                <h3 className="font-bold mb-2">Descrição:</h3>
-                <p className="text-gray-700">
-                  {game.name} - Um jogo emocionante que promete horas de diversão. 
-                  Disponível para download imediato após a compra.
-                </p>
-              </div>
-
-              {game.rating && (
-                <div className="mt-4">
-                  <span className="font-bold">Avaliação:</span>
-                  <span className="ml-2">⭐ {game.rating}/5</span>
+                  <Button
+                    onClick={handleBuyNow}
+                    className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                  >
+                    Compre Agora
+                  </Button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
       </main>
 
-      <footer className="bg-black text-white p-4 mt-8">
-        <div className="container mx-auto text-center text-sm">
-          <p>© 2025 GameStore</p>
-        </div>
-      </footer>
+      <GameFooter />
     </div>
   );
 };
