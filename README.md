@@ -1,3 +1,11 @@
+# Integrandes do Grupo
+Componente 1: Ana Caroline Valerio Moreira/12318791/valerioanamoreira66@gmail.com/Ciência da Computação
+Componente 2: Gabriel Sousa Bastos/123115047/gabriel.bastosbh@gmail.com/Ciência da computação
+Componente 3: Gabriel Vinícius dos Santos Rocha/1222010322/gabriellvsero@gmail.com/Ciência da computação
+Componente 4: Miguel Pedro Pinheiro/12315515/ atomictrl@gmail.com/Ciência da computação
+Componente 3: Thiago Antonio Silva/123221596/thiago63antonio@gmail.com /Ciência da computação
+
+
 # 🎮 GameStore - Loja de Jogos Online
 
 Uma plataforma moderna de e-commerce para compra de jogos digitais, desenvolvida com React, TypeScript, Tailwind CSS e Lovable Cloud (Supabase).
